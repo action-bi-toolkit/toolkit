@@ -1,0 +1,7 @@
+*dataTransforms.json
+*query.json
+__Toolkit/_QuickBackups/*.pbix
+__Toolkit/_Dependencies/*.csv
+
+# Uncomment to prevent the pbix files
+*.pbix

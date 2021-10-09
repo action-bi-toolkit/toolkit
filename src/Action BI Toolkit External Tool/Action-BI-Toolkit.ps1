@@ -1,9 +1,13 @@
 ﻿#region config
 
+# Run this once to prevent the script from prompting warning each time
+#Get-ChildItem C:\Users\BrianMather\AppData\Local\ActionBIToolkit\Action-BI-Toolkit.ps1 | Unblock-File
+
 $global:ActionBIToolkitDependenciesPath = Join-Path ${env:LOCALAPPDATA} "ActionBIToolkit"
 
 # Override the version of Power BI Desktop that pbi-tools uses
 # $env:PBITOOLS_PbiInstallDir = "C:\Program Files\Microsoft Power BI Desktop\"
+$env:PBITOOLS_PbiInstallDir = "C:\Users\BrianMather\Downloads\2.94.921.0\2.94.921.0\Microsoft Power BI Desktop\"
 
 # Set the path to the pbi-tools executable within the Action BI Toolkit directory
 $PbiToolsExePath = Join-Path $ActionBIToolkitDependenciesPath "pbi-tools\pbi-tools.exe"
@@ -314,6 +318,8 @@ function Initialize-Toolkit {
     $LocalToolkitSettings | Add-Member -MemberType NoteProperty -Name Database -Value $LocalDatabase
     $LocalToolkitSettings | Add-Member -MemberType NoteProperty -Name ConString -Value $LocalConString
     
+    Get-GitIgnoreTemplate $LocalToolkitSettings
+
     return $LocalToolkitSettings
 }
 function Get-RunOption {
@@ -322,8 +328,19 @@ function Get-RunOption {
     )
 
     if ($LocalPbixFileType -eq "Thick Report: Model embedded within Local PBIX") {
-        Write-Host "`nExecution options: (default = Export PBIX for source control)`n`n 1) Export PBIX for source control`n 2) Run page tests`n 3) Save backup of PBIX`n 4) Execute DAX Queries and export to csv`n 5) Open in VS Code`n 6) Compile Thin Report(s) from Source Control`n 7) Deploy to Power BI environment"
+        Write-Host "`nExecution options: " -Foregroundcolor Yellow
+        Write-Host " 1) Export PBIX for source control"
+        Write-Host " 2) Run page tests" -Foregroundcolor DarkGray
+        Write-Host " 3) Save backup of PBIX" -Foregroundcolor DarkGray
+        Write-Host " 4) Execute DAX Queries and export to csv" -Foregroundcolor DarkGray
+        Write-Host " 5) Open in VS Code" -Foregroundcolor DarkGray
+        Write-Host " 6) Compile Thick Report .pbit from Source Control"
+        Write-Host " 7) Compile Thin Report(s) .pbix from Source Control"
+        Write-Host " 8) Deploy to Power BI environment"
+        Write-Host "         (NB: default = 1) " -Foregroundcolor DarkGray
+        
         Write-Host "`nChoose option: " -ForegroundColor Yellow -NoNewline
+        
         $option = Read-Host
         if ($option -eq "") { $Chosenoption = "Export PBIX for Source Control"; $option = 1 }
         else {
@@ -333,9 +350,10 @@ function Get-RunOption {
                 3 { $Chosenoption = "Backup PBIX" }
                 4 { $Chosenoption = "Export DAX Queries" }
                 5 { $Chosenoption = "Open VSCode" }
-                6 { $Chosenoption = "Compile Thin Report(s) from Source Control" }
-                7 { $Chosenoption = "Deploy to Power BI environment" }
-                8 { $Chosenoption = "All" }
+                6 { $Chosenoption = "Compile Thick Report .pbit from Source Control" }
+                7 { $Chosenoption = "Compile Thin Report(s) .pbix from Source Control" }
+                8 { $Chosenoption = "Deploy to Power BI environment" }
+                9 { $Chosenoption = "All" }
             }
         }
         Clear-Host
@@ -344,7 +362,7 @@ function Get-RunOption {
     }
     else {
         Write-host "`nDefault execution option: " -NoNewline
-        Write-host "Export PBIX for source control"
+        Write-host "Export PBIX for source control" -ForegroundColor Yellow
         $Chosenoption = "Export PBIX for source control"
     }
     
@@ -367,6 +385,22 @@ function Get-DeploymentFolders {
         ($_.Parent.Fullname -ne $LocalDeploymentFolderName)
     }
     return $LocalDeploymentWorkspaceFolder, $LocalDeploymentEnvironmentFolders
+}
+function Get-GitIgnoreTemplate {
+
+param
+    (
+        [Parameter(Mandatory = $true, Position = 0)] [psobject] $ls
+    )
+
+    $GitIgnorePath = Join-Path $ls.PbixRootFolder ".gitignore"
+    $GitIgnoreTemplatePath = Join-Path $ActionBIToolkitDependenciesPath "sample gitignore.txt"
+    if (Test-Path $GitIgnorePath) {
+        # do nothing if .gitignore already exists
+    }
+    else {
+        Copy-Item -Path $GitIgnoreTemplatePath -Destination $GitIgnorePath 
+    }
 }
 #endregion toolkit_startup
 
@@ -418,7 +452,7 @@ function Open-FolderInVSCode {
     (
         [Parameter(Mandatory = $true, Position = 0)] $LocalPbixProjFolder    
     )
-    Write-Host "Opening folder in VSCode..."
+    Write-Host "`n`nOpening folder in VSCode..."
     code $LocalPbixProjFolder
 } #close Open-FolderInVSCode
 function Get-TabularPackages {
@@ -609,7 +643,7 @@ function Invoke-PbiToolsExtract {
         [Parameter(Mandatory = $false, Position = 2)] [string] $LocalServer
     )
     
-    Write-Host "`nStarting pbix extraction"
+    Write-Host "`nSTARTING .pbix EXTRACTION"
     Write-Host "Extracting pbix $($LocalExtractFolderPath)..." -ForegroundColor Cyan -NoNewline
 
     if ('' -eq $LocalServer) {
@@ -627,7 +661,7 @@ function Invoke-PbiToolsExtract {
         break;
     }
     else {
-        Write-Host "  Done."
+        Write-Host "  Done.`n`n"
         #$response | Write-Host -ForegroundColor Yellow
     }
     return
@@ -1427,7 +1461,9 @@ function Export-UnusedFieldScript {
         ( $_.Table -notmatch "LocalDateTable_" ) # Ignore temporary date tables, we don't care if they are unused
     }
 
-    if ($unusedFields.Count -ne 0) { Write-Host "`n             $($unusedFields.Count) new unused fields found...." }
+    if ($unusedFields.Count -ne 0) { 
+        Write-Host "`n             $($unusedFields.Count) new unused fields found...."  -Foregroundcolor Cyan -NoNewLine 
+    }
 
     foreach ($field in $unusedFields) {
         switch ($field.ObjectType) {
@@ -1454,7 +1490,9 @@ function Export-UnusedFieldScript {
         ( $_.DisplayFolder -match "_Unused" ) 
     }
 
-    if ($UsedFieldsCurrentlyInUnusedFolder.Count -ne 0) { Write-Host "`n$($UsedFieldsCurrentlyInUnusedFolder.Count) new used fields found." }
+    if ($UsedFieldsCurrentlyInUnusedFolder.Count -ne 0) { 
+        Write-Host "`n             $($UsedFieldsCurrentlyInUnusedFolder.Count) new used fields found." -Foregroundcolor Cyan -NoNewLine 
+    } 
 
     foreach ($field in $UsedFieldsCurrentlyInUnusedFolder) {
         switch ($field.ObjectType) {
@@ -1834,6 +1872,43 @@ function Export-DaxQueries {
     }
 }
 
+function Compile-ThickReport {
+    param
+    (
+        [Parameter(Mandatory = $true, Position = 0)] [psobject] $ls
+    )
+
+    $NewPbixFilePath = (Join-Path $ls.PbixRootFolder $ls.PbixFilePath).replace(".pbix",".pbit")
+
+    if ((Test-Path $NewPbixFilePath) -and !($ProceedToOverwriteAll) ) {
+        Write-Host "`nAre you sure you wish to overwrite the existing file(s)?" -ForegroundColor Cyan -NoNewLine
+        Write-Host "`n`n$NewPbixFilePath " -ForegroundColor Cyan
+        $ClearToProceed = Read-Host "(Y)Yes to confirm for this file `n(N)No to cancel for this file `n(A)To confirm for this and all further files"
+    }
+    else {
+        $ClearToProceed = "Y"
+    }
+
+        if ( ($ClearToProceed.ToUpper() -eq "Y") ) {
+            
+            Write-Host "`Compiling thick report template `"$(Split-Path $NewPbixFilePath -Leaf)`" from source control..." -ForegroundColor Cyan -NoNewline
+
+            while (Test-FileLock $NewPbixFilePath) {
+                Read-Host "Please close file and press key to try again: $($NewPbixFilePath)" -ForegroundColor Red
+            }
+            
+            $myfolder = $ls.PbixExportFolder + "\"
+
+            # Compile pbix from Source Control using pbi-tools
+            $pbitoolsReponse = pbitools compile-pbix $myfolder -outpath $ls.PbixRootFolder -format 'pbit' -overwrite
+            if (!$?) {
+                throw $pbitoolsReponse
+            }
+            else {
+                Write-Host "Done."
+            }
+    }
+}
 function Compile-ThinReportWithLocalConnection {
     param
     (
@@ -2026,8 +2101,16 @@ function Deploy-ThickReport {
 # Replace server and database details here for local VS Code testing#
 #[psobject]$TKS = Initialize-Toolkit "localhost:53278" "015f3b90-b5ad-4cea-8f14-f6d69704a260"
 
+# Get the Toolkit Session settings ($TKS) for this session
 [psobject]$TKS = Initialize-Toolkit $args[0] $args[1]
+
+# Fetch selected user run option
 [string]$RunOption = Get-RunOption $TKS.PbixFileType
+
+# Add selected user run option to Toolkit Session settings ($TKS)
+$TKS | Add-Member -MemberType NoteProperty -Name runOption -Value $RunOption
+
+# Fetch the json definition for the report of the selected .pbix file
 [string]$reportJson = Get-ReportJson $TKS
 
 
@@ -2035,27 +2118,28 @@ if ($RunOption -eq "Export PBIX for source control" -or $RunOption -eq "All" ) {
     Export-PBIX $TKS $reportJson
 
     # Start of dependencies analysis
-    Write-Host "Extracting fields used in report..." -ForegroundColor Cyan -NoNewline
+    #####Write-Host "Extracting fields used in report..." -ForegroundColor Cyan -NoNewline
     Export-ReportFieldDependencies $TKS.dependenciesOutFolder $reportJson $TKS.PbixFileName
     Export-ReportFieldDependenciesByRegex $TKS.dependenciesOutFolder $TKS.PbixExportFolder $TKS.PbixFileName
-    Write-Host " Done."
+    #####Write-Host " Done."
     # end of dependencies analysis
 
     # Extra steps if we have a thick report
     if ( $TKS.PbixFileType -eq "Thick Report: Model embedded within Local PBIX") {
 
+        Write-Host "STARTING DEPENDENCY ANALYSIS"
         # Export a registry of all model fields for dependency analysis
-        Write-Host "Extracting all model fields for dependency analysis..." -ForegroundColor Cyan -NoNewline
+        #####Write-Host "Extracting all model fields for dependency analysis..." -ForegroundColor Cyan -NoNewline
         Export-ModelFields $TKS.dependenciesOutFolder $TKS.Server $TKS.Database $TKS.PbixFileName
-        Write-Host " Done."
+        #####Write-Host " Done."
 
         # Export all model calculation dependencies from DMVs
-        Write-Host "Extracting calculation dependencies from DMVs..." -ForegroundColor Cyan -NoNewline
+        #####Write-Host "Extracting calculation dependencies from DMVs..." -ForegroundColor Cyan -NoNewline
         Export-CalculationDependencies $TKS.dependenciesOutFolder $TKS.Server $TKS.Database $TKS.PbixFileName     
-        Write-Host " Done."
+        #####Write-Host " Done."
 
         # Export unused field scripts
-        Write-Host "Analysing dependencies to find unused fields..." -ForegroundColor Cyan
+        #####Write-Host "Analysing dependencies to find unused fields..." -ForegroundColor Cyan
         Write-Host "Generating helper script to organise unused fields..." -ForegroundColor Cyan -NoNewline
         Export-UnusedFieldScript $TKS.dependenciesOutFolder $TKS.PbixFileName
         Write-Host " Done." -NoNewLine
@@ -2066,7 +2150,7 @@ if ($RunOption -eq "Export PBIX for source control" -or $RunOption -eq "All" ) {
             Invoke-PbiToolsExportBim $TKS.pbixBIMDeployFolder $TKS.PbixProjSettings.bimDeployType
         }
     }
-    Open-FolderInVSCode $TKS.PbixRootFolder
+    Exit-ActionBIToolkit "`n`nAction BI Toolkit complete: Launching pbix repo in VS Code" $TKS.PbixRootFolder
 }
     
 if ($RunOption -eq "Export DAX Queries" -or $RunOption -eq "All") {
@@ -2085,10 +2169,16 @@ if ($RunOption -eq "Open VSCode" -or $RunOption -eq "All") {
     Exit-ActionBIToolkit "`n`nAction BI Toolkit complete: Launching pbix repo in VS Code" $TKS.PbixRootFolder;
 }
 
-if ($RunOption -eq "Compile Thin Report(s) from Source Control") {
+if ($RunOption -eq "Compile Thin Report(s) .pbix from Source Control") {
     #Hot swap connection to running desktop instance
     Compile-ThinReportWithLocalConnection $TKS
     Exit-ActionBIToolkit "`n`nAction BI Toolkit complete: Compile Thin Reports from Source Control"
+}
+
+if ($RunOption -eq "Compile Thick Report .pbit from Source Control") {
+    #Hot swap connection to running desktop instance
+    Compile-ThickReport $TKS
+    Exit-ActionBIToolkit "`n`nAction BI Toolkit complete: Compile Thick Report template .pbit from Source Control"
 }
 
 if ($RunOption -eq "Deploy to Power BI environment") {
