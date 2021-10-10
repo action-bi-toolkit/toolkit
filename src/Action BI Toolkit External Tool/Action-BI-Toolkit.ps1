@@ -3,11 +3,8 @@
 # Run this once to prevent the script from prompting warning each time
 #Get-ChildItem C:\Users\BrianMather\AppData\Local\ActionBIToolkit\Action-BI-Toolkit.ps1 | Unblock-File
 
+$global:ActionBIToolkitPath =  $PSScriptRoot
 $global:ActionBIToolkitDependenciesPath = Join-Path ${env:LOCALAPPDATA} "ActionBIToolkit"
-
-# Override the version of Power BI Desktop that pbi-tools uses
-# $env:PBITOOLS_PbiInstallDir = "C:\Program Files\Microsoft Power BI Desktop\"
-$env:PBITOOLS_PbiInstallDir = "C:\Users\BrianMather\Downloads\2.94.921.0\2.94.921.0\Microsoft Power BI Desktop\"
 
 # Set the path to the pbi-tools executable within the Action BI Toolkit directory
 $PbiToolsExePath = Join-Path $ActionBIToolkitDependenciesPath "pbi-tools\pbi-tools.exe"
@@ -40,6 +37,8 @@ function Get-PowerBIDesktopSessions {
 
     $localsessions = @()
 
+    $pbitoolsessions = (pbitools info | ConvertFrom-Json).pbiSessions 
+    
     foreach ($i in $id) {
         # $AnalysisServicesWorkspacePath = (($i | Select-Object -ExpandProperty Commandline) -split " -s " -split "-c -n ")[2].Replace("`"","")
         # $PortNumberInMSMDSRVPORTTXT = Get-Content (Join-Path $AnalysisServicesWorkspacePath msmdsrv.port.txt) -encoding unicode
@@ -49,6 +48,13 @@ function Get-PowerBIDesktopSessions {
         $PowerBIDesktopProcess = (Get-CimInstance -Class Win32_Process -Filter "ProcessId = $($PowerBIDesktopProcessId)" )
         
         [string]$PBIXFilePath = (($PowerBIDesktopProcess | Select-Object -ExpandProperty Commandline) -split '\"')[3]
+        
+        if ($PBIXFilePath -eq "") {
+        # TODO File name empty here with PBID Store version, should fallback to 'pbi-tools info' 
+            $PBIXFilePath = ($pbitoolsessions | Where-Object {$_.ProcessId -eq $PowerBIDesktopProcessId}).PbixPath
+
+        }
+        
         [string]$LocalPBIXName = ((Get-Process -id $PowerBIDesktopProcessId).MainWindowTitle -split " - Power BI Desktop")[0]
         
         # Fall back to split path of commandline if MainWindowTitle does not return name
@@ -394,7 +400,7 @@ param
     )
 
     $GitIgnorePath = Join-Path $ls.PbixRootFolder ".gitignore"
-    $GitIgnoreTemplatePath = Join-Path $ActionBIToolkitDependenciesPath "sample gitignore.txt"
+    $GitIgnoreTemplatePath = Join-Path $ActionBIToolkitPath "sample gitignore.txt"
     if (Test-Path $GitIgnorePath) {
         # do nothing if .gitignore already exists
     }
@@ -1878,7 +1884,7 @@ function Compile-ThickReport {
         [Parameter(Mandatory = $true, Position = 0)] [psobject] $ls
     )
 
-    $NewPbixFilePath = (Join-Path $ls.PbixRootFolder $ls.PbixFilePath).replace(".pbix",".pbit")
+    $NewPbixFilePath = $ls.PbixFilePath.replace(".pbix",".pbit")
 
     if ((Test-Path $NewPbixFilePath) -and !($ProceedToOverwriteAll) ) {
         Write-Host "`nAre you sure you wish to overwrite the existing file(s)?" -ForegroundColor Cyan -NoNewLine
@@ -1897,11 +1903,11 @@ function Compile-ThickReport {
                 Read-Host "Please close file and press key to try again: $($NewPbixFilePath)" -ForegroundColor Red
             }
             
-            $myfolder = $ls.PbixExportFolder + "\"
+            $myfolder = $ls.PbixExportFolder
 
             # Compile pbix from Source Control using pbi-tools
             $pbitoolsReponse = pbitools compile-pbix $myfolder -outpath $ls.PbixRootFolder -format 'pbit' -overwrite
-            if (!$?) {
+            if ( $LASTEXITCODE -ne 0 ) {
                 throw $pbitoolsReponse
             }
             else {
