@@ -1,0 +1,18 @@
+BusinessEntityID,JobTitle,Department,GroupName,StartDate,CommissionPct,Sales Territoy,Sales Territory Group,Sales Territory Country,Sales Person
+274,North American Sales Manager,Sales,Sales and Marketing,2011-01-04T00:00:00,0,,,,Stephen Jiang
+275,Sales Representative,Sales,Sales and Marketing,2011-05-31T00:00:00,0.012,Northeast,North America,United States,Michael Blythe
+276,Sales Representative,Sales,Sales and Marketing,2011-05-31T00:00:00,0.015,Southwest,North America,United States,Linda Mitchell
+277,Sales Representative,Sales,Sales and Marketing,2011-05-31T00:00:00,0.015,Central,North America,United States,Jillian Carson
+278,Sales Representative,Sales,Sales and Marketing,2011-05-31T00:00:00,0.01,Canada,North America,Canada,Garrett Vargas
+279,Sales Representative,Sales,Sales and Marketing,2011-05-31T00:00:00,0.01,Southeast,North America,United States,Tsvi Reiter
+280,Sales Representative,Sales,Sales and Marketing,2011-05-31T00:00:00,0.01,Northwest,North America,United States,Pamela Ansman-Wolfe
+281,Sales Representative,Sales,Sales and Marketing,2011-05-31T00:00:00,0.01,Southwest,North America,United States,Shu Ito
+282,Sales Representative,Sales,Sales and Marketing,2011-05-31T00:00:00,0.015,Canada,North America,Canada,José Saraiva
+283,Sales Representative,Sales,Sales and Marketing,2011-05-31T00:00:00,0.012,Northwest,North America,United States,David Campbell
+284,Sales Representative,Sales,Sales and Marketing,2012-09-30T00:00:00,0.019,Northwest,North America,United States,Tete Mensa-Annan
+285,Pacific Sales Manager,Sales,Sales and Marketing,2013-03-14T00:00:00,0,,,,Syed Abbas
+286,Sales Representative,Sales,Sales and Marketing,2013-05-30T00:00:00,0.018,Australia,Pacific,Australia,Lynn Tsoflias
+287,European Sales Manager,Sales,Sales and Marketing,2012-04-16T00:00:00,0,,,,Amy Alberts
+288,Sales Representative,Sales,Sales and Marketing,2013-05-30T00:00:00,0.018,Germany,Europe,Germany,Rachel Valdez
+289,Sales Representative,Sales,Sales and Marketing,2012-05-30T00:00:00,0.02,United Kingdom,Europe,United Kingdom,Jae Pak
+290,Sales Representative,Sales,Sales and Marketing,2012-05-30T00:00:00,0.016,France,Europe,France,Ranjit Varkey Chudukatil

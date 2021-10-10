@@ -1897,7 +1897,7 @@ function Compile-ThickReport {
                 Read-Host "Please close file and press key to try again: $($NewPbixFilePath)" -ForegroundColor Red
             }
             
-            $myfolder = $ls.PbixExportFolder + "\"
+            $myfolder = $ls.PbixExportFolder
 
             # Compile pbix from Source Control using pbi-tools
             $pbitoolsReponse = pbitools compile-pbix $myfolder -outpath $ls.PbixRootFolder -format 'pbit' -overwrite
