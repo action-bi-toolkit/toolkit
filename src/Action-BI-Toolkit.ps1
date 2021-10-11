@@ -7,7 +7,7 @@ $global:ActionBIToolkitPath =  $PSScriptRoot
 $global:ActionBIToolkitDependenciesPath = Join-Path ${env:LOCALAPPDATA} "ActionBIToolkit"
 
 # Set the path to the pbi-tools executable within the Action BI Toolkit directory
-$PbiToolsExePath = Join-Path $ActionBIToolkitDependenciesPath "pbi-tools\pbi-tools.exe"
+$PbiToolsExePath = Join-Path $ActionBIToolkitPath "pbi-tools\pbi-tools.exe"
 
 # Test is pbi-tools.exe installed
 [bool] $global:UsePBITools = Test-Path $PbiToolsExePath
@@ -575,7 +575,7 @@ function Export-PBIX {
         }
 
         Invoke-PbiToolsExtract $ls.PbixFilePath $ls.PbixExportFolder $LocalServer
-        Output-CompilePbitBatchFile $ls
+        Write-CompilePbitBatchFile $ls
     }
     else {
         Write-Host "Export pages & visuals using PowerShell (without pbi-tools)..." -ForegroundColor Cyan -NoNewline
