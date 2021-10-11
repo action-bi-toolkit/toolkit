@@ -1,7 +1,7 @@
 ﻿#region config
 
 # Run this once to prevent the script from prompting warning each time
-#Get-ChildItem C:\Users\BrianMather\AppData\Local\ActionBIToolkit\Action-BI-Toolkit.ps1 | Unblock-File
+#Get-ChildItem C:\Program Files\ActionBIToolkit\Action-BI-Toolkit.ps1 | Unblock-File
 
 $global:ActionBIToolkitPath =  $PSScriptRoot
 $global:ActionBIToolkitDependenciesPath = Join-Path ${env:LOCALAPPDATA} "ActionBIToolkit"
@@ -392,6 +392,20 @@ function Get-DeploymentFolders {
     }
     return $LocalDeploymentWorkspaceFolder, $LocalDeploymentEnvironmentFolders
 }
+function Output-CompilePbitBatchFile {
+
+    param
+        (
+            [Parameter(Mandatory = $true, Position = 0)] [psobject] $ls
+        )
+    
+
+    $batchfilecommand = "@echo off 
+    pbi-tools compile-pbix -folder "".\$($ls.PbixFileName)"" -format PBIT -overwrite"
+    $batchfilename = $($ls.PbixFileName) + " compile to template.bat"
+    $batchfilepath = Join-Path $ls.PbixRootFolder $batchfilename
+    $batchfilecommand | Set-Content $batchfilepath | Out-Null
+}
 function Get-GitIgnoreTemplate {
 
 param
@@ -400,7 +414,7 @@ param
     )
 
     $GitIgnorePath = Join-Path $ls.PbixRootFolder ".gitignore"
-    $GitIgnoreTemplatePath = Join-Path $ActionBIToolkitPath "sample gitignore.txt"
+    $GitIgnoreTemplatePath = Join-Path $ActionBIToolkitPath "gitignore.template.txt"
     if (Test-Path $GitIgnorePath) {
         # do nothing if .gitignore already exists
     }
@@ -561,6 +575,7 @@ function Export-PBIX {
         }
 
         Invoke-PbiToolsExtract $ls.PbixFilePath $ls.PbixExportFolder $LocalServer
+        Output-CompilePbitBatchFile $ls
     }
     else {
         Write-Host "Export pages & visuals using PowerShell (without pbi-tools)..." -ForegroundColor Cyan -NoNewline
@@ -599,7 +614,7 @@ function Get-PbixProjSettings {
         }
     }
     else {
-        Write-Host ".pbixproj.json missing" -ForegroundColor Red
+        Write-Host ".pbixproj.json not found" -ForegroundColor DarkGray
         $LocalPbixProjSettings | Add-Member -MemberType NoteProperty -Name settingsRead -Value 'MissingSettings'
     }
     
