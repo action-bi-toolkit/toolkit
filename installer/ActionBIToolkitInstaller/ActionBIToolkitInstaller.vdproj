@@ -2527,7 +2527,7 @@
             }
             "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_FFD704CD921F463092F1F5FD8E7796FA"
             {
-            "SourcePath" = "8:..\\..\\src\\External Tool Manifest\\Action-BI-Toolkit.pbitool.json"
+            "SourcePath" = "8:..\\..\\src\\Action-BI-Toolkit.pbitool.json"
             "TargetName" = "8:Action-BI-Toolkit.pbitool.json"
             "Tag" = "8:"
             "Folder" = "8:_97B8C6C4C90A4FBCB826D8D71BE5E295"
