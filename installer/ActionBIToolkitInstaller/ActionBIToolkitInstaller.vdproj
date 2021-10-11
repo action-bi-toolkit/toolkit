@@ -2704,7 +2704,7 @@
                     }
                     "{9EF0B969-E518-4E46-987F-47570745A589}:_94BED4B92C2E456ABDE40BC099C344BC"
                     {
-                    "Name" = "8:Microsoft.AnalysisServicesAdomdClient.retail.amd64"
+                    "Name" = "8:Microsoft.AnalysisServices.AdomdClient.retail.amd64"
                     "AlwaysCreate" = "11:FALSE"
                     "Condition" = "8:"
                     "Transitive" = "11:FALSE"
