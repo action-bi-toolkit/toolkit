@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "name": "Action BI Toolkit-PSDesktop",
+  "name": "Action BI Toolkit",
   "description": "Action BI Toolkit-PSDesktop",
   "path": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
   "arguments": "-file \"C:\\Program Files\\Action BI Toolkit\\Action-BI-Toolkit.ps1\" \"%server%\" \"%database%\"",
