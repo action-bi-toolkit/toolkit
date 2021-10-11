@@ -4,7 +4,6 @@
 #Get-ChildItem C:\Program Files\ActionBIToolkit\Action-BI-Toolkit.ps1 | Unblock-File
 
 $global:ActionBIToolkitPath =  $PSScriptRoot
-$global:ActionBIToolkitDependenciesPath = Join-Path ${env:LOCALAPPDATA} "ActionBIToolkit"
 
 # Set the path to the pbi-tools executable within the Action BI Toolkit directory
 $PbiToolsExePath = Join-Path $ActionBIToolkitPath "pbi-tools\pbi-tools.exe"
@@ -222,7 +221,7 @@ function Initialize-Toolkit {
         [Parameter(Mandatory = $false, Position = 0)] [string]$LocalArgs0,
         [Parameter(Mandatory = $false, Position = 1)] [string]$LocalArgs1
     )
-
+    
     Get-TabularPackages
 
     # Get connection and pbix file details in VS Code mode
@@ -401,7 +400,7 @@ function Write-CompilePbitBatchFile {
     
 
     $batchfilecommand = "@echo off 
-    $($env:ProgramFiles)\Action BI Toolkit\pbi-tools\pbi-tools compile-pbix -folder "".\$($ls.PbixFileName)"" -format PBIT -overwrite"
+    ""$($env:ProgramFiles)\Action BI Toolkit\pbi-tools\pbi-tools.exe"" compile-pbix -folder "".\$($ls.PbixFileName)"" -format PBIT -overwrite"
     $batchfilename = $($ls.PbixFileName) + " compile to template.bat"
     $batchfilepath = Join-Path $ls.PbixRootFolder $batchfilename
     $batchfilecommand | Set-Content $batchfilepath | Out-Null
@@ -422,6 +421,49 @@ param
         Copy-Item -Path $GitIgnoreTemplatePath -Destination $GitIgnorePath 
     }
 }
+
+function Get-TabularPackages {
+
+    if ($PSVersionTable.PSEdition -eq "Desktop") {
+        $AdmomdClientAssemblyString = "$ActionBIToolkitPath\Microsoft.AnalysisServices.AdomdClient.retail.amd64\Microsoft.AnalysisServices.AdomdClient.dll"
+    }
+    else { 
+        $AdmomdClientAssemblyString = "$ActionBIToolkitPath\Microsoft.AnalysisServices.AdomdClient.NetCore.retail.amd64\Microsoft.AnalysisServices.AdomdClient.dll"
+    }
+    if ( Test-Path $AdmomdClientAssemblyString) { 
+        $AdmomdClientAssemblyPath = Resolve-Path $AdmomdClientAssemblyString #| Out-Null 
+    }
+    else {
+        # do nothing - these should be installed by the msi installer
+    }
+       
+    try {
+        Add-Type -Path $AdmomdClientAssemblyPath
+    }
+    catch { 
+        $_.Exception.LoaderExceptions 
+    }
+
+    if ($PSVersionTable.PSEdition -eq "Desktop") {
+        $TabularAssemblyString = "$ActionBIToolkitPath\Microsoft.AnalysisServices.retail.amd64\Microsoft.AnalysisServices.Tabular.dll"
+    }
+    else { 
+        $TabularAssemblyString = "$ActionBIToolkitPath\Microsoft.AnalysisServices.NetCore.retail.amd64\Microsoft.AnalysisServices.Tabular.dll"
+    }
+    if ( Test-Path $TabularAssemblyString) { 
+        $TabularAssemblyPath = Resolve-Path $TabularAssemblyString # | Out-Null
+    }
+    else {
+        # do nothing - these should be installed by the msi installer
+    }
+    try {
+        Add-Type -Path $TabularAssemblyPath
+    }
+    catch { 
+        $_.Exception.LoaderExceptions 
+    }
+} #close Get-TabularPackages
+
 #endregion toolkit_startup
 
 #region general_utilities
@@ -475,71 +517,7 @@ function Open-FolderInVSCode {
     Write-Host "`n`nOpening folder in VSCode..."
     code $LocalPbixProjFolder
 } #close Open-FolderInVSCode
-function Get-TabularPackages {
 
-    if ($PSVersionTable.PSEdition -eq "Desktop") {
-        $AdmomdClientAssemblyString = "$ActionBIToolkitDependenciesPath\Microsoft.AnalysisServices.AdomdClient.retail.amd64.19.18.0\lib\net45\Microsoft.AnalysisServices.AdomdClient.dll"
-    }
-    else { 
-        $AdmomdClientAssemblyString = "$ActionBIToolkitDependenciesPath\Microsoft.AnalysisServices.AdomdClient.NetCore.retail.amd64.19.18.0\lib\netcoreapp3.0\Microsoft.AnalysisServices.AdomdClient.dll"
-    }
-    if ( Test-Path $AdmomdClientAssemblyString) { 
-        $AdmomdClientAssemblyPath = Resolve-Path $AdmomdClientAssemblyString #| Out-Null 
-    }
-    else {
-        if (-not $(Get-PackageSource -ProviderName NuGet -ErrorAction Ignore)) {
-            # add the packagesource
-            Find-PackageProvider -Name Nuget | Install-PackageProvider -Scope CurrentUser -Force
-            Register-PackageSource -Name nuget.org -Location https://www.nuget.org/api/v2 -ProviderName NuGet
-        }
-        
-        if ($PSVersionTable.PSEdition -eq "Desktop") {
-            Write-Host "Installing Microsoft.AnalysisServices.AdomdClient.retail.amd64 package`n$ActionBIToolkitDependenciesPath"
-            Install-Package -Name Microsoft.AnalysisServices.AdomdClient.retail.amd64 -ProviderName NuGet -Scope CurrentUser -RequiredVersion 19.18.0 -SkipDependencies -Destination $ActionBIToolkitDependenciesPath -Force;
-            $AdmomdClientAssemblyPath = Resolve-Path $AdmomdClientAssemblyString #| Out-Null
-        }
-        else {
-            Write-Host "Installing Microsoft.AnalysisServices.AdomdClient.NetCore.retail.amd64 package`n$ActionBIToolkitDependenciesPath"
-            Install-Package -Name Microsoft.AnalysisServices.AdomdClient.NetCore.retail.amd64 -ProviderName NuGet -Scope CurrentUser -RequiredVersion 19.18.0 -SkipDependencies -Destination $ActionBIToolkitDependenciesPath -Force;
-            $AdmomdClientAssemblyPath = Resolve-Path $AdmomdClientAssemblyString #| Out-Null
-        }
-    }
-    
-    try {
-        Add-Type -Path $AdmomdClientAssemblyPath
-    }
-    catch { 
-        $_.Exception.LoaderExceptions 
-    }
-
-    if ($PSVersionTable.PSEdition -eq "Desktop") {
-        $TabularAssemblyString = "$ActionBIToolkitDependenciesPath\Microsoft.AnalysisServices.retail.amd64.19.18.0\lib\net45\Microsoft.AnalysisServices.Tabular.dll"
-    }
-    else { 
-        $TabularAssemblyString = "$ActionBIToolkitDependenciesPath\Microsoft.AnalysisServices.NetCore.retail.amd64.19.18.0\lib\netcoreapp3.0\Microsoft.AnalysisServices.Tabular.dll"
-    }
-    if ( Test-Path $TabularAssemblyString) { 
-        $TabularAssemblyPath = Resolve-Path $TabularAssemblyString # | Out-Null
-    }
-    else {
-        if ($PSVersionTable.PSEdition -eq "Desktop") {
-            Write-Host "Installing Microsoft.AnalysisServices.retail.amd64 package`n $ActionBIToolkitDependenciesPath"
-            Install-Package -Name Microsoft.AnalysisServices.retail.amd64 -ProviderName NuGet -Scope CurrentUser -RequiredVersion 19.18.0 -SkipDependencies -Destination $ActionBIToolkitDependenciesPath -Force;
-            $TabularAssemblyPath = Resolve-Path $TabularAssemblyString #| Out-Null
-        }
-        else {
-            Write-Host "Installing Microsoft.AnalysisServices.NetCore.retail.amd64 package`n $ActionBIToolkitDependenciesPath"
-            Install-Package -Name Microsoft.AnalysisServices.NetCore.retail.amd64 -ProviderName NuGet -Scope CurrentUser -RequiredVersion 19.18.0 -SkipDependencies -Destination $ActionBIToolkitDependenciesPath -Force;
-            $TabularAssemblyPath = Resolve-Path $TabularAssemblyString #| Out-Null
-        }
-    }
-    try {
-        Add-Type -Path $TabularAssemblyPath
-    }
-    catch { 
-        $_.Exception.LoaderExceptions 
-    }
-} #close Get-TabularPackages
 function Test-FileLock {
     param(
         [parameter(Mandatory = $True)]
