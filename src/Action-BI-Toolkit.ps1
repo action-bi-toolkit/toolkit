@@ -401,7 +401,7 @@ function Write-CompilePbitBatchFile {
     
 
     $batchfilecommand = "@echo off 
-    pbi-tools compile-pbix -folder "".\$($ls.PbixFileName)"" -format PBIT -overwrite"
+    $($env:ProgramFiles)\Action BI Toolkit\pbi-tools\pbi-tools compile-pbix -folder "".\$($ls.PbixFileName)"" -format PBIT -overwrite"
     $batchfilename = $($ls.PbixFileName) + " compile to template.bat"
     $batchfilepath = Join-Path $ls.PbixRootFolder $batchfilename
     $batchfilecommand | Set-Content $batchfilepath | Out-Null
