@@ -392,7 +392,7 @@ function Get-DeploymentFolders {
     }
     return $LocalDeploymentWorkspaceFolder, $LocalDeploymentEnvironmentFolders
 }
-function Output-CompilePbitBatchFile {
+function Write-CompilePbitBatchFile {
 
     param
         (
