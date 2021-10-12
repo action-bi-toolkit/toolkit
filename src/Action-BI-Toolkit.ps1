@@ -2110,7 +2110,7 @@ function Deploy-ThickReport {
 $TKS | Add-Member -MemberType NoteProperty -Name runOption -Value $RunOption
 
 # Fetch the json definition for the report of the selected .pbix file
-[string]$reportJson = Get-ReportJson $TKS
+[psobject]$reportJson = Get-ReportJson $TKS
 
 
 if ($RunOption -eq "Export PBIX for source control" -or $RunOption -eq "All" ) {
@@ -2120,6 +2120,7 @@ if ($RunOption -eq "Export PBIX for source control" -or $RunOption -eq "All" ) {
     #####Write-Host "Extracting fields used in report..." -ForegroundColor Cyan -NoNewline
     Export-ReportFieldDependencies $TKS.dependenciesOutFolder $reportJson $TKS.PbixFileName
     Export-ReportFieldDependenciesByRegex $TKS.dependenciesOutFolder $TKS.PbixExportFolder $TKS.PbixFileName
+    
     #####Write-Host " Done."
     # end of dependencies analysis
 
