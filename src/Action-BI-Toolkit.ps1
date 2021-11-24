@@ -458,10 +458,13 @@ function Get-TabularPackages {
     }
     try {
         Add-Type -Path $TabularAssemblyPath
+        [System.Reflection.Assembly]::LoadWithPartialName("Microsoft.AnalysisServices")
+        [System.Reflection.Assembly]::LoadWithPartialName("Microsoft.AnalysisServices.Tabular")
     }
     catch { 
         $_.Exception.LoaderExceptions 
     }
+
 } #close Get-TabularPackages
 
 #endregion toolkit_startup
@@ -1137,7 +1140,7 @@ function Export-ReportFieldDependencies {
     )
 
     $ArrayOfDependencies = @()
-    
+    Write-Host "Extracting dependencies from report pages"
     # Add report filters
     if ($null -eq $LocalReportJson.filters ) {}
     else {
@@ -1301,7 +1304,7 @@ function Export-ReportFieldDependencies {
                 }
 
                 if ($null -eq $from) {
-                    Write-Host $vis
+                    ## Do nothing Visual has no query
                 }
                 else {
                     foreach ($t in $from) {
@@ -1372,6 +1375,8 @@ function Export-ReportFieldDependenciesByRegex {
         [Parameter(Mandatory = $true, Position = 1)] [string] $LocalReportFolder,
         [Parameter(Mandatory = $true, Position = 2)] [string] $LocalPBIXName
     )
+
+    Write-Host "Extracting dependencies from report pages using regex"
 
     $MatchType = '((?<MatchType>"webURL":|"databars":|"Icon":|"title":|"color":).*?)'
     $Entity = '((?<FieldType>Column|Measure?).*?)?:{"Expression":{"SourceRef":{"Entity":(?<Entity>.+?)}}?(,"Property":)(?<Property>.*?)}}'
@@ -1734,7 +1739,7 @@ function Test-ReportPages {
 
     # Create the first connection object  
     try { 
-        $con = new-object Microsoft.AnalysisServices.AdomdClient.AdomdConnection 
+        $con = New-Object Microsoft.AnalysisServices.AdomdClient.AdomdConnection 
         $con.ConnectionString = $LocalConnectionString
         $con.Open()
         $connectionDriver = "ADMOMD"
@@ -2107,7 +2112,7 @@ function Deploy-ThickReport {
 [string]$RunOption = Get-RunOption $TKS.PbixFileType
 
 # Add selected user run option to Toolkit Session settings ($TKS)
-$TKS | Add-Member -MemberType NoteProperty -Name runOption -Value $RunOption
+Add-Member -InputObject $TKS -MemberType NoteProperty -Name runOption -Value $RunOption
 
 # Fetch the json definition for the report of the selected .pbix file
 [psobject]$reportJson = Get-ReportJson $TKS
