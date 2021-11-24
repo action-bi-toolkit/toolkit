@@ -2,6 +2,7 @@
 *query.json
 __Toolkit/_QuickBackups/*.pbix
 __Toolkit/_Dependencies/*.csv
+__Toolkit/_Dependencies/*.cs
 
 # Uncomment to prevent the pbix files
 *.pbix
