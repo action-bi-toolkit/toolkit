@@ -16,6 +16,16 @@ if ($UsePBITools) {
     New-Alias pbitools $PbiToolsExePath -Force
 }
 
+$VSCodePath = Join-Path $env:LOCALAPPDATA "Programs\Microsoft VS Code\Code.exe"
+
+[bool] $global:UseVSCode = Test-Path $VSCodePath
+
+if ($UseVSCode) {
+    # Define new alias for pbi-tools.exe to ensure the External Tool uses it's version, not a version from the $env:Path
+    New-Alias vscode $VSCodePath -Force
+}
+
+
 #endregion config
 
 #region toolkit_startup
@@ -63,6 +73,7 @@ function Get-PowerBIDesktopSessions {
         else {}
         
         $as = New-Object Microsoft.AnalysisServices.Tabular.Server
+
         try {
             $as.Connect("localhost:$LocalPort")
             $LocalDatabase = ($as.Databases)[0].ID
@@ -236,7 +247,7 @@ function Initialize-Toolkit {
     }
 
     # Exit if pbix file not found
-    if (!(Test-Path $LocalPbixFilePath)) {
+    if (("" -eq $LocalPbixFilePath) -or !(Test-Path $LocalPbixFilePath)) {
         Exit-ActionBIToolkit "The pbix file for $($LocalPbixFileName) could not be found. You may need to save, close and reopen your pbix file and try again"
     }
     
@@ -458,8 +469,8 @@ function Get-TabularPackages {
     }
     try {
         Add-Type -Path $TabularAssemblyPath
-        [System.Reflection.Assembly]::LoadWithPartialName("Microsoft.AnalysisServices")
-        [System.Reflection.Assembly]::LoadWithPartialName("Microsoft.AnalysisServices.Tabular")
+        [System.Reflection.Assembly]::LoadWithPartialName("Microsoft.AnalysisServices") | Out-Null
+        [System.Reflection.Assembly]::LoadWithPartialName("Microsoft.AnalysisServices.Tabular") | Out-Null
     }
     catch { 
         $_.Exception.LoaderExceptions 
@@ -496,9 +507,12 @@ function Exit-ActionBIToolkit ($LocalMessage, $LocalPbixProjFolder) {
         Write-Host "$LocalMessage" -ForegroundColor Yellow
 
         # Open or switch to project folder in VS Code
-        if ($null -ne $LocalPbixProjFolder) {
-            Write-Host "`rOpening in VS Code..." -ForegroundColor Yellow -NoNewline
-            code $LocalPbixProjFolder
+        if ($null -ne $LocalPbixProjFolder)  {
+            if ($UseVSCode) {
+                Write-Host "`rOpening in VS Code..." -ForegroundColor Yellow -NoNewline
+                vscode $LocalPbixProjFolder
+            }
+            else { Write-Host "Not opening folder in VS Code, VS Code not found."}
         }
 
         #$host.ui.RawUI.ReadKey("NoEcho,IncludeKeyDown") | Out-Null
@@ -517,8 +531,11 @@ function Open-FolderInVSCode {
     (
         [Parameter(Mandatory = $true, Position = 0)] $LocalPbixProjFolder    
     )
-    Write-Host "`n`nOpening folder in VSCode..."
-    code $LocalPbixProjFolder
+    if ($UseVSCode){    
+        Write-Host "`n`nOpening folder in VSCode..."
+        vscode $LocalPbixProjFolder
+    }
+    else { Write-Host "Not opening folder in VS Code, VS Code not found."}
 } #close Open-FolderInVSCode
 
 function Test-FileLock {
