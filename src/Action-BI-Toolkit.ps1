@@ -497,7 +497,7 @@ function Exit-ActionBIToolkit ($LocalMessage, $LocalPbixProjFolder) {
 
         # Open or switch to project folder in VS Code
         if ($null -ne $LocalPbixProjFolder) {
-            Write-Host "`rOpening in VS Code..." -ForegroundColor Yellow
+            Write-Host "`rOpening in VS Code..." -ForegroundColor Yellow -NoNewline
             code $LocalPbixProjFolder
         }
 
@@ -645,7 +645,7 @@ function Invoke-PbiToolsExtract {
         [Parameter(Mandatory = $false, Position = 2)] [string] $LocalServer
     )
     
-    Write-Host "`nSTARTING .pbix EXTRACTION"
+    Write-Host "`nStarting .pbix extraction using pbi-tools command line utility..."
     Write-Host "Extracting pbix $($LocalExtractFolderPath)..." -ForegroundColor Cyan -NoNewline
 
     if ('' -eq $LocalServer) {
@@ -1139,8 +1139,9 @@ function Export-ReportFieldDependencies {
         [Parameter(Mandatory = $true, Position = 2)] [string] $LocalPBIXName
     )
 
+    Write-Host "Extracting dependencies from report pages" -ForegroundColor Cyan -NoNewline
     $ArrayOfDependencies = @()
-    Write-Host "Extracting dependencies from report pages"
+
     # Add report filters
     if ($null -eq $LocalReportJson.filters ) {}
     else {
@@ -1368,6 +1369,7 @@ function Export-ReportFieldDependencies {
     $newfile = Join-Path $LocalFolder ($LocalPBIXName + "_ReportDependencies.csv")
     $ArrayOfDependencies | Sort-Object -Property ObjectKey, ObjectType, Object | export-csv $newfile -notypeinformation
 
+    Write-Host " Done."
 }
 function Export-ReportFieldDependenciesByRegex {
     param (
@@ -1376,7 +1378,7 @@ function Export-ReportFieldDependenciesByRegex {
         [Parameter(Mandatory = $true, Position = 2)] [string] $LocalPBIXName
     )
 
-    Write-Host "Extracting dependencies from report pages using regex"
+    Write-Host "Extracting dependencies from report pages using regex..." -ForegroundColor Cyan -NoNewline
 
     $MatchType = '((?<MatchType>"webURL":|"databars":|"Icon":|"title":|"color":).*?)'
     $Entity = '((?<FieldType>Column|Measure?).*?)?:{"Expression":{"SourceRef":{"Entity":(?<Entity>.+?)}}?(,"Property":)(?<Property>.*?)}}'
@@ -1418,6 +1420,8 @@ function Export-ReportFieldDependenciesByRegex {
 
     $newfile = Join-Path $LocalOutFolder ($LocalPBIXName + "_ReportDependenciesByRegex.csv")
     $DeduplicatedDtable | export-csv $newfile -notypeinformation
+
+    Write-Host " Done."
 }
 function Export-UnusedFieldScript {
     param (
@@ -2132,11 +2136,11 @@ if ($RunOption -eq "Export PBIX for source control" -or $RunOption -eq "All" ) {
     # Extra steps if we have a thick report
     if ( $TKS.PbixFileType -eq "Thick Report: Model embedded within Local PBIX") {
 
-        Write-Host "STARTING DEPENDENCY ANALYSIS"
+        Write-Host "Analysing all fields for dependencies..." -ForegroundColor Cyan -NoNewline
         # Export a registry of all model fields for dependency analysis
         #####Write-Host "Extracting all model fields for dependency analysis..." -ForegroundColor Cyan -NoNewline
         Export-ModelFields $TKS.dependenciesOutFolder $TKS.Server $TKS.Database $TKS.PbixFileName
-        #####Write-Host " Done."
+        Write-Host " Done."
 
         # Export all model calculation dependencies from DMVs
         #####Write-Host "Extracting calculation dependencies from DMVs..." -ForegroundColor Cyan -NoNewline
@@ -2145,9 +2149,9 @@ if ($RunOption -eq "Export PBIX for source control" -or $RunOption -eq "All" ) {
 
         # Export unused field scripts
         #####Write-Host "Analysing dependencies to find unused fields..." -ForegroundColor Cyan
-        Write-Host "Generating helper script to organise unused fields..." -ForegroundColor Cyan -NoNewline
-        Export-UnusedFieldScript $TKS.dependenciesOutFolder $TKS.PbixFileName
+        Write-Host "`nGenerating Tabular Editor helper .cs script to organise unused fields..." -ForegroundColor Cyan -NoNewline
         Write-Host " Done." -NoNewLine
+        Export-UnusedFieldScript $TKS.dependenciesOutFolder $TKS.PbixFileName
         Write-Host
 
         # Export bim if required
