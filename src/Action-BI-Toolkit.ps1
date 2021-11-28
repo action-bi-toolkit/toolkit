@@ -211,15 +211,33 @@ public static extern int GetWindowThreadProcessId(IntPtr hWnd, out int lpdwProce
     $hPowerShell = $FindForegroundWindow::GetForegroundWindow()
 
     # Get window handle for the Window below PowerShell which will be the window handle for the PBI Desktop instance the External Tool has been called from
-    $hPBI = $FindWindow::GetWindow($hPowerShell, 2)
+    $hPBI = $FindWindow::GetWindow($hPowerShell, 2) ##GW_HWNDNEXT
+
 
     # Initialise $pbiProcessID 
     $pbiProcessId = 0
 
     # Find the process ID for the Power BI Desktop instance that owns that window handle
     $FindWindowThreadProcessId::GetWindowThreadProcessId($hPBI, [ref]$pbiProcessId) | Out-Null
+               
     
     if ((Get-Process -Id $pbiProcessId).ProcessName -ne "PBIDesktop") {
+    
+        $hPBINew = $FindWindow::GetWindow($hPBI, 2)
+    
+        do {
+    
+            $hPBINew = $FindWindow::GetWindow($hPBINew, 2) 
+            # Initialise $pbiProcessID 
+            $pbiProcessId = 0
+    
+            $FindWindowThreadProcessId::GetWindowThreadProcessId($hPBINew, [ref]$pbiProcessId) | Out-Null
+            
+        } until ((Get-Process -Id $pbiProcessId).ProcessName -eq 'PBIDesktop') 
+        
+    }
+    
+    if ( (Get-Process -Id $pbiProcessId).ProcessName -ne 'PBIDesktop') {
         Exit-ActionBIToolkit "Next window not a Power BI Desktop session. Please try again"
     }
     
@@ -233,12 +251,14 @@ function Initialize-Toolkit {
         [Parameter(Mandatory = $false, Position = 1)] [string]$LocalArgs1
     )
     
+    Write-Host "Finding running PBI Desktop session..." -NoNewline
+
     Get-TabularPackages
 
     # Get connection and pbix file details in VS Code mode
     if ("" -eq $LocalArgs0) { 
-        $SelectedSession = Get-UserSelectLocalPBISession
-        $LocalServer, $LocalDatabase, $LocalPBIXFileType, $LocalPbixFilePath, $LocalPbixFileName = $SelectedSession.Server, $SelectedSession.Database, $SelectedSession.DatasetType, $SelectedSession.PbixPath, $SelectedSession.PBIXName
+       $SelectedSession = Get-UserSelectLocalPBISession
+       $LocalServer, $LocalDatabase, $LocalPBIXFileType, $LocalPbixFilePath, $LocalPbixFileName = $SelectedSession.Server, $SelectedSession.Database, $SelectedSession.DatasetType, $SelectedSession.PbixPath, $SelectedSession.PBIXName
     }
 
     # Get connection and pbix file details in External Tool mode
@@ -251,6 +271,7 @@ function Initialize-Toolkit {
         Exit-ActionBIToolkit "The pbix file for $($LocalPbixFileName) could not be found. You may need to save, close and reopen your pbix file and try again"
     }
     
+    Write-Host "Found"
     $LocalPbixRootFolder = Split-Path -Path $LocalPbixFilePath
     
     Write-Host $("`nAction BI Toolkit:") -ForegroundColor Yellow
@@ -517,6 +538,7 @@ function Exit-ActionBIToolkit ($LocalMessage, $LocalPbixProjFolder) {
 
         #$host.ui.RawUI.ReadKey("NoEcho,IncludeKeyDown") | Out-Null
         $counter = 6
+            
         while (!$Host.UI.RawUI.KeyAvailable -and ($counter-- -gt 1)) {
             Write-Host -NoNewline $("`rClosing in $counter... click to pause exit")
             [Threading.Thread]::Sleep( 1000 )
@@ -1941,7 +1963,7 @@ function Compile-ThinReportWithLocalConnection {
     )
 
     $LocalThinReportDirectories = Get-ChildItem  $ls.ThinReportsFolder | Where-Object { $_.Mode -eq "d----" }
-    Write-Host "`nPlease select one of the thin report folders:"
+    Write-Host "`n`nPlease select one of the thin report folders:"
     $i = 1
     foreach ($f in $LocalThinReportDirectories  ) {
         Write-Host "$i) $($f.Name)" -ForegroundColor Cyan
